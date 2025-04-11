@@ -7,6 +7,7 @@ import os
 import torch
 import tensorly as tl
 from tensorly.decomposition import parafac, non_negative_parafac
+from sklearn.model_selection import train_test_split
 
 #import data loader and model
 from data_loader import get_factors, extract_ecal
@@ -18,13 +19,15 @@ def run_model(rank, num_samples, epochs = 200, device = 'cuda:1'):
     #num_samples is how many samples you want to train on, returns original data, and parameter count of model, as well as the model.
 
     tl.set_backend('pytorch')
-    ecals_subset = extract_ecal(num_samples=num_samples)
-    stored_factors, index_map, valid_indices = get_factors(ecals_subset=ecals_subset, rank=rank)
+    ecals_subset = extract_ecal(num_samples=num_samples, file_amount=10)
+    ecal_train, ecal_test = train_test_split(ecals_subset, test_size=0.1, random_state = 1)
+    #Keep random state the same so we can just store ecal_subset
 
+    stored_factors, index_map, valid_indices = get_factors(ecals_subset=ecal_train, rank=rank)
     model = FactorDiffusionModel(rank=rank).to(device)
     parameter_count = train_diffusion(model, stored_factors, device=device, epochs=epochs)
 
-    return model, ecals_subset, parameter_count
+    return model, ecals_subset, ecal_train, ecal_test, parameter_count
 
 def generate_tensors(model, num_generated, rank, device = 'cuda:1'):
     #Generates new images, num_generated is how many tensors you would like to generate

@@ -3,3 +3,7 @@ factor_model/FID_Results
 factor_model/test.ipynb
 factor_model/__pycache__
 factor_model/Data_Visualization.ipynb
+factor_model/old_data
+my_data
+experiment_results
+cached_factors_gammaRA_randomsample

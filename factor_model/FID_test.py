@@ -86,15 +86,15 @@ def run_FID(original_tensors, generated_tensors, num_comparisons, device = 'cuda
     return fid_score_tensors
 
 
-ranks = [100]
+ranks = [200, 250]
 n_repeats = 5  # Number of times to repeat FID per rank
 num_samples = 5000 #number of samples to train on
 
-num_generated = 500 #number of tensors to generate
-num_comparisons = 500 #number of samples to compare (should be <= num generate)
+num_generated = int(0.10 * num_samples) #number of tensors to generate
+num_comparisons = int(0.10 * num_samples) #number of samples to compare (should be = num generate)
 
 for rank in ranks:
-    model, original_tensors, parameters = run_model(rank=rank, num_samples=num_samples, epochs=200)
+    model, original_tensors, ecal_train, ecal_test, parameters = run_model(rank=rank, num_samples=num_samples, epochs=200)
 
     generated_tensors = generate_tensors(model=model, num_generated=num_generated, rank=rank)
 
@@ -113,12 +113,11 @@ for rank in ranks:
 
         for repeat in range(n_repeats):
             #num_comparisons <= num_generated <= num_samples
-            fid = run_FID(original_tensors=original_tensors, generated_tensors=generated_tensors, num_comparisons=num_comparisons)
+            fid = run_FID(original_tensors=ecal_test, generated_tensors=generated_tensors, num_comparisons=num_comparisons)
             fid_scores.append(fid)
             f.write(f"Repeat {repeat+1}: FID = {fid:.6f}\n")
 
             generated_tensors = generate_tensors(model=model, num_generated=num_generated, rank=rank)
-
 
         avg_fid = sum(fid_scores) / len(fid_scores)
         f.write(f"\nAverage FID: {avg_fid:.6f}\n")
