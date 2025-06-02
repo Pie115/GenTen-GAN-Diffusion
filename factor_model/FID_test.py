@@ -86,7 +86,7 @@ def run_FID(original_tensors, generated_tensors, num_comparisons, device = 'cuda
     return fid_score_tensors
 
 
-ranks = [200, 250]
+ranks = [5, 10, 25, 50, 100, 150, 200, 250]
 n_repeats = 5  # Number of times to repeat FID per rank
 num_samples = 5000 #number of samples to train on
 

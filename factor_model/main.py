@@ -19,7 +19,7 @@ def run_model(rank, num_samples, epochs = 200, device = 'cuda:1'):
     #num_samples is how many samples you want to train on, returns original data, and parameter count of model, as well as the model.
 
     tl.set_backend('pytorch')
-    ecals_subset = extract_ecal(num_samples=num_samples, file_amount=10)
+    ecals_subset = extract_ecal(num_samples=num_samples, file_amount=1)
     ecal_train, ecal_test = train_test_split(ecals_subset, test_size=0.1, random_state = 1)
     #Keep random state the same so we can just store ecal_subset
 

@@ -28,7 +28,7 @@ def reservoir_sampling(stream, k):
     return reservoir
 
 def extract_ecal(file_amount = 1, device = 'cuda:1', num_samples = 1000):
-    data_folder = "../my_data/"
+    data_folder = "../datasets/calorimeter/gamma_random_angle/"
 
     # get one of the files from data_folder
     data_files = os.listdir(data_folder)

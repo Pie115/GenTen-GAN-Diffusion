@@ -9,6 +9,14 @@ def log_normalize(tensor):
 def log_denormalize(tensor):
     return torch.expm1(tensor)
 
+'''
+def make_ddim_schedule(T, s=0.008):
+    steps = torch.arange(T + 1, dtype=torch.float32)
+    f_t = torch.cos(((steps / T + s) / (1 + s)) * torch.pi * 0.5) ** 2
+    alpha_bars = f_t / f_t[0]
+    return alpha_bars[1:] 
+'''
+
 def make_ddim_schedule(T):
     beta_start, beta_end = 1e-4, 0.02
     betas = torch.linspace(beta_start, beta_end, T)
