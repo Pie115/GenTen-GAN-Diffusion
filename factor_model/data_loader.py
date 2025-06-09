@@ -116,7 +116,7 @@ def clean_factors(stored_factors, index_map, device = 'cuda:1'):
     print(f"Cleaned stored_factors. Remaining valid entries: {len(stored_factors)}")
     return stored_factors, index_map, valid_indices
 
-def save_factors_to_cache(factors, index_map, valid_indices, rank, cache_dir="cached_factors_gammaRA_randomsample"):
+def save_factors_to_cache(factors, index_map, valid_indices, rank, cache_dir="../stored_factors/cached_factors_gammaRA_randomsample"):
     os.makedirs(cache_dir, exist_ok=True)
     path = os.path.join(cache_dir, f"rank_{rank}_factors.pkl")
     with open(path, "wb") as f:
@@ -127,7 +127,7 @@ def save_factors_to_cache(factors, index_map, valid_indices, rank, cache_dir="ca
         }, f)
     print(f"[Cache] Saved factors to {path}")
 
-def load_factors_from_cache(rank, cache_dir="cached_factors_gammaRA_randomsample", device='cuda:1'):
+def load_factors_from_cache(rank, cache_dir="../stored_factors/cached_factors_gammaRA_randomsample", device='cuda:1'):
     path = os.path.join(cache_dir, f"rank_{rank}_factors.pkl")
     if os.path.exists(path):
         with open(path, "rb") as f:

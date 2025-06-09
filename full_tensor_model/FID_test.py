@@ -6,7 +6,7 @@ import h5py
 import os
 import torch
 import tensorly as tl
-from tensorly.decomposition import parafac, non_negative_parafac
+import gc
 from torchmetrics.image.fid import FrechetInceptionDistance
 from main import run_model, generate_tensors
 
@@ -86,44 +86,47 @@ def run_FID(original_tensors, generated_tensors, num_comparisons, device = 'cuda
     return fid_score_tensors
 
 
-ranks = [250]
-n_repeats = 5  # Number of times to repeat FID per rank
+n_repeats = 5  # Number of times to repeat FID
 num_samples = 5000 #number of samples to train on
 
 num_generated = int(0.10 * num_samples) #number of tensors to generate
 num_comparisons = int(0.10 * num_samples) #number of samples to compare (should be = num generate)
 
-for rank in ranks:
-    model, original_tensors, ecal_train, ecal_test, parameters = run_model(rank=rank, num_samples=num_samples, epochs=200)
+model, original_tensors, ecal_train, ecal_test, parameters = run_model(num_samples=num_samples, epochs=200)
 
-    generated_tensors = generate_tensors(model=model, num_generated=num_generated, rank=rank)
+generated_tensors = generate_tensors(model=model, num_generated=num_generated)
 
-    save_directory = f"generated_tensors2_{rank}"
-    os.makedirs(save_directory, exist_ok=True)
+save_directory = f"generated_tensors2"
+os.makedirs(save_directory, exist_ok=True)
 
-    # Save first 10 tensors
-    for i in range(min(10, len(generated_tensors))):
-        print(f'Max Value: {generated_tensors[i].max()} Sum: {generated_tensors[i].sum()}')
-        save_tensor_slices(generated_tensors[i], save_directory, file_name=f"generated_tensor_{i}.png")
+# Save first 10 tensors
+for i in range(min(10, len(generated_tensors))):
+    print(f'Max Value: {generated_tensors[i].max()} Sum: {generated_tensors[i].sum()}')
+    save_tensor_slices(generated_tensors[i], save_directory, file_name=f"generated_tensor_{i}.png")
 
-    fid_path = os.path.join(save_directory, "results.txt")
-    with open(fid_path, "w") as f:
-        f.write(f"FID Scores for Rank: {rank}, Parameters: {parameters}\n\n")
-        fid_scores = []
+fid_path = os.path.join(save_directory, "results.txt")
+with open(fid_path, "w") as f:
+    f.write(f"FID Scores, Parameters: {parameters}\n\n")
+    fid_scores = []
 
-        for repeat in range(n_repeats):
-            #num_comparisons <= num_generated <= num_samples
-            fid = run_FID(original_tensors=ecal_test, generated_tensors=generated_tensors, num_comparisons=num_comparisons)
-            fid_scores.append(fid)
-            f.write(f"Repeat {repeat+1}: FID = {fid:.6f}\n")
-
-            generated_tensors = generate_tensors(model=model, num_generated=num_generated, rank=rank)
-
-        avg_fid = sum(fid_scores) / len(fid_scores)
-        f.write(f"\nAverage FID: {avg_fid:.6f}\n")
-
-        std_fid = np.std(fid_scores)
-        f.write(f"Standard Deviation: {std_fid:.6f}\n")
+    for repeat in range(n_repeats):
+        #num_comparisons <= num_generated <= num_samples
+        fid = run_FID(original_tensors=ecal_test, generated_tensors=generated_tensors, num_comparisons=num_comparisons)
+        fid_scores.append(fid)
+        f.write(f"Repeat {repeat+1}: FID = {fid:.6f}\n")
 
 
-    print(f"[Rank {rank}] [Parameters] {parameters} Completed {n_repeats} FID runs. Avg FID: {avg_fid:.4f}")
+        del generated_tensors
+        gc.collect()
+        torch.cuda.empty_cache()
+
+        generated_tensors = generate_tensors(model=model, num_generated=num_generated)
+
+    avg_fid = sum(fid_scores) / len(fid_scores)
+    f.write(f"\nAverage FID: {avg_fid:.6f}\n")
+
+    std_fid = np.std(fid_scores)
+    f.write(f"Standard Deviation: {std_fid:.6f}\n")
+
+
+print(f"[Parameters] {parameters} Completed {n_repeats} FID runs. Avg FID: {avg_fid:.4f}")

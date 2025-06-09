@@ -9,20 +9,21 @@ def log_normalize(tensor):
 def log_denormalize(tensor):
     return torch.expm1(tensor)
 
-'''
+
 def make_ddim_schedule(T, s=0.008):
     steps = torch.arange(T + 1, dtype=torch.float32)
     f_t = torch.cos(((steps / T + s) / (1 + s)) * torch.pi * 0.5) ** 2
     alpha_bars = f_t / f_t[0]
     return alpha_bars[1:] 
-'''
 
+'''
 def make_ddim_schedule(T):
     beta_start, beta_end = 1e-4, 0.02
     betas = torch.linspace(beta_start, beta_end, T)
     alphas = 1. - betas
     alpha_bars = torch.cumprod(alphas, dim=0)
     return alpha_bars
+'''
 
 def get_timestep_embedding(timesteps, embedding_dim=64):
     device = timesteps.device
@@ -57,12 +58,12 @@ class FactorDiffusionModel(nn.Module):
             nn.Sigmoid()
         )
         self.denoiser_C = nn.Sequential(
-            nn.Linear(25 * rank + t_emb_dim, 256),
-            nn.BatchNorm1d(256),
+            nn.Linear(25 * rank + t_emb_dim, 512),
+            nn.BatchNorm1d(512),
             nn.ReLU(),
-            nn.Linear(256, 256),
+            nn.Linear(512, 512),
             nn.ReLU(),
-            nn.Linear(256, 25 * rank),
+            nn.Linear(512, 25 * rank),
             nn.Sigmoid()
         )
 
@@ -127,6 +128,8 @@ def train_diffusion(model, factors, batch_size=32, lr=1e-3, epochs=100, T=1000, 
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
+
+            del A_batch, B_batch, C_batch, A_noisy, B_noisy, C_noisy, A_pred, B_pred, C_pred, t, t_idx, loss
 
         print(f"Epoch {epoch+1}, Loss: {total_loss / max(1, A_tensor.size(0) // batch_size)}")
 

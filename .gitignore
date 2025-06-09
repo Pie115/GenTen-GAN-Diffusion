@@ -9,3 +9,6 @@ experiment_results
 cached_factors_gammaRA_randomsample
 datasets
 factor_model/cached_factors_electronRA_randomsample
+stored_factors
+full_tensor_model/__pycache__
+factor_model/plot_timesteps.py
