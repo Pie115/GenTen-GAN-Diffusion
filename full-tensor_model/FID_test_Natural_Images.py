@@ -13,7 +13,7 @@ def save_tensor_slices(tensor, save_path, file_name="generated_tensor.png", upsc
     os.makedirs(save_path, exist_ok=True)
     save_file = os.path.join(save_path, file_name)
 
-    if tensor.shape[-1] == 25:  # ECAL-style data
+    if tensor.shape[-1] == 25: 
         tensor = tensor.numpy()
         fig, axes = plt.subplots(5, 5, figsize=(15, 15))
         for i in range(25):
@@ -26,9 +26,8 @@ def save_tensor_slices(tensor, save_path, file_name="generated_tensor.png", upsc
         plt.savefig(save_file, dpi=300)
         plt.close()
 
-    elif tensor.shape[-1] == 3:  # RGB image shape: (H, W, 3)
-        # Reorder to (1, 3, H, W) for interpolation
-        img = tensor.permute(2, 0, 1).unsqueeze(0)  # (1, 3, H, W)
+    elif tensor.shape[-1] == 3: 
+        img = tensor.permute(2, 0, 1).unsqueeze(0)
         img = (img - img.min()) / (img.max() - img.min())
 
         upscaled = F.interpolate(img, size=(upscale_size, upscale_size), mode='bilinear', align_corners=False)
@@ -123,6 +122,5 @@ def fid_pipeline(dataset="ecal", num_samples=5000, epochs=200, n_repeats=5, devi
 
     print(f"[{dataset.upper()}] Params: {parameters} | Avg FID over {n_repeats} runs: {avg_fid:.4f}")
 
-# Example call:
-fid_pipeline(dataset="celeba", epochs = 50, num_samples=10000)
+#fid_pipeline(dataset="celeba", epochs = 50, num_samples=10000)
 #fid_pipeline(dataset="cifar10", epochs = 10, num_samples=4000)
