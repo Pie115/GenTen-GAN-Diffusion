@@ -9,21 +9,11 @@ def log_normalize(tensor):
 def log_denormalize(tensor):
     return torch.expm1(tensor)
 
-
 def make_ddim_schedule(T, s=0.008):
     steps = torch.arange(T + 1, dtype=torch.float32)
     f_t = torch.cos(((steps / T + s) / (1 + s)) * torch.pi * 0.5) ** 2
     alpha_bars = f_t / f_t[0]
     return alpha_bars[1:] 
-
-'''
-def make_ddim_schedule(T):
-    beta_start, beta_end = 1e-4, 0.02
-    betas = torch.linspace(beta_start, beta_end, T)
-    alphas = 1. - betas
-    alpha_bars = torch.cumprod(alphas, dim=0)
-    return alpha_bars
-'''
 
 def get_timestep_embedding(timesteps, embedding_dim=64):
     device = timesteps.device
@@ -84,10 +74,12 @@ class FactorDiffusionModel(nn.Module):
         C_out = self.denoiser_C(C_input).view(batch_size, 25, self.rank)
         return A_out, B_out, C_out
 
-def add_scaled_noise(x, t, noise_scale=0.1):
-    std = x.std(dim=(1, 2), keepdim=True) + 1e-6
-    noise = torch.randn_like(x) * t * std * noise_scale
-    return x * (1 - t) + noise
+def add_scaled_noise(x, t_idx, alpha_bars):
+   noise = torch.randn_like(x)
+   alpha_bar_t = alpha_bars[t_idx].view(-1, 1, 1)
+
+   return torch.sqrt(alpha_bar_t) * x + torch.sqrt(1 - alpha_bar_t) * noise
+
 
 def train_diffusion(model, factors, batch_size=32, lr=1e-3, epochs=100, T=1000, device='cuda:0'):
     optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -115,11 +107,12 @@ def train_diffusion(model, factors, batch_size=32, lr=1e-3, epochs=100, T=1000, 
             C_batch = C_tensor[i:i+batch_size]
 
             t_idx = torch.randint(0, T, (A_batch.size(0),), device=device)
-            t = alpha_bars[t_idx].view(-1, 1, 1)
 
-            A_noisy = add_scaled_noise(A_batch, t)
-            B_noisy = add_scaled_noise(B_batch, t)
-            C_noisy = add_scaled_noise(C_batch, t)
+            A_noisy = add_scaled_noise(A_batch, t_idx, alpha_bars)
+            B_noisy = add_scaled_noise(B_batch, t_idx, alpha_bars)
+            C_noisy = add_scaled_noise(C_batch, t_idx, alpha_bars)
+
+            t = alpha_bars[t_idx].view(-1, 1, 1)
 
             A_pred, B_pred, C_pred = model(A_noisy, B_noisy, C_noisy, t)
             loss = mse_loss(A_pred, A_batch) + mse_loss(B_pred, B_batch) + mse_loss(C_pred, C_batch)
